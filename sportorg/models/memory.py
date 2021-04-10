@@ -1020,6 +1020,7 @@ class ResultSFR(ResultSportident):
 class ResultSportiduino(ResultSportident):
     system_type = SystemType.SPORTIDUINO
 
+
 class ResultRfidImpinj(ResultSportident):
     system_type = SystemType.RFID_IMPINJ
 
@@ -1196,6 +1197,7 @@ class Race(Model):
         'ResultSportident': ResultSportident,
         'ResultSFR': ResultSFR,
         'ResultSportiduino': ResultSportiduino,
+        'ResultRfidImpinj': ResultRfidImpinj,
         'Group': Group,
         'Course': Course,
         'Organization': Organization,

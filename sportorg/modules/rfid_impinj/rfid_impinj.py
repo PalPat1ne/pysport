@@ -8,12 +8,11 @@ import time
 import serial
 from PySide2.QtCore import QThread, Signal
 from pyImpinj import ImpinjR2KReader
-from pyImpinj.constant import READER_ANTENNA
+from pyImpinj.enums import ImpinjR2KFastSwitchInventory
 
 from sportorg.common.otime import OTime
 from sportorg.common.singleton import singleton
 from sportorg.models import memory
-
 
 
 class ImpinjCommand:
@@ -32,6 +31,9 @@ class ImpinjThread(QThread):
         self._logger = logger
         self._debug = debug
 
+        self.timeout_list = {}
+        self.timeout = 15  # timeout in seconds
+
     def run(self):
         try:
             tag_queue = queue.Queue(1024)
@@ -46,17 +48,6 @@ class ImpinjThread(QThread):
             impinj_reader.worker_start()
             impinj_reader.fast_power(22)
 
-            self._logger.debug(impinj_reader.get_rf_port_return_loss())
-            self._logger.debug(impinj_reader.get_ant_connection_detector())
-            self._logger.debug(impinj_reader.set_ant_connection_detector(10))
-
-            antenna_array = [READER_ANTENNA['ANTENNA1'],
-                             READER_ANTENNA['ANTENNA2'],
-                             READER_ANTENNA['ANTENNA3'],
-                             READER_ANTENNA['ANTENNA4']]
-            index = 0
-            impinj_reader.set_work_antenna(READER_ANTENNA['ANTENNA4'])
-
         except Exception as e:
             self._logger.error(str(e))
             return
@@ -70,21 +61,33 @@ class ImpinjThread(QThread):
 
             try:
                 data = tag_queue.get(timeout=0.1)
-            except BaseException:
-                impinj_reader.rt_inventory(repeat=10)
+            except Exception:
+                impinj_reader.fast_switch_ant_inventory(param=dict(A=ImpinjR2KFastSwitchInventory.ANTENNA1, Aloop=1,
+                                                                   B=ImpinjR2KFastSwitchInventory.ANTENNA2, Bloop=1,
+                                                                   C=ImpinjR2KFastSwitchInventory.ANTENNA3, Cloop=1,
+                                                                   D=ImpinjR2KFastSwitchInventory.ANTENNA4, Dloop=1,
+                                                                   Interval=0,
+                                                                   Repeat=1))
                 continue
 
             try:
-                if data['type'] == 'DONE':
-                    index = index + 1
-                    index = 0 if index >= len(antenna_array) else index
-                    self._logger.debug(impinj_reader.set_work_antenna(antenna_array[index]))
 
                 self._logger.debug('Impinj RFID data: {}'.format(data))
                 card_data = data
-                card_data['time'] = OTime()
-                self._queue.put(ImpinjCommand('card_data', card_data), timeout=1)
+                card_data['time'] = OTime.now()
 
+                # don't create new result if we already have fresh result for this tag (timeout 15s)
+                card_id = data['epc']
+                card_time = card_data['time']
+                if card_id in self.timeout_list:
+                    old_time = self.timeout_list[card_id]
+                    if card_time - old_time < OTime(sec=self.timeout):
+                        self._logger.debug('Duplicated result for tag {}, ignoring'.format(card_id))
+                        continue
+
+                self.timeout_list[card_id] = card_time
+
+                self._queue.put(ImpinjCommand('card_data', card_data), timeout=1)
 
             except serial.serialutil.SerialException as e:
                 self._logger.error(str(e))
@@ -103,26 +106,46 @@ class ResultThread(QThread):
         self._stop_event = stop_event
         self._logger = logger
 
+        # self.timeout_list = {}
+        # self.timeout = 15  # timeout in seconds
+
     def run(self):
         time.sleep(1)
         while True:
             try:
+
+                # dummy_data = {'epc':'00 00 00 01', 'time':OTime.now()}
+                # result = self._get_result(dummy_data)
+                # # don't create new result if we already have fresh result for this tag (timeout 15s)
+                # create_result= True
+                # card_id = result.card_number
+                # card_time = result.finish_time
+                # if card_id in self.timeout_list:
+                #     old_time = self.timeout_list[card_id]
+                #     if card_time - old_time < OTime(sec=self.timeout):
+                #         self._logger.debug('Duplicated result for tag {}, ignoring'.format(card_id))
+                #         create_result = False
+                # if create_result:
+                #     self.timeout_list[card_id] = card_time
+                #     self.data_sender.emit(result)
+
                 cmd = self._queue.get(timeout=5)
                 if cmd.command == 'card_data':
                     result = self._get_result(cmd.data)
                     self.data_sender.emit(result)
+
             except Empty:
                 if not main_thread().is_alive() or self._stop_event.is_set():
                     break
             except Exception as e:
-                self._logger.error(str(e))
+                self._logger.exception(e)
         self._logger.debug('Stop adder result')
 
     @staticmethod
     def _get_result(card_data):
         result = memory.race().new_result(memory.ResultRfidImpinj)
 
-        result.card_number = int(str(card_data['epc']).replace(" ", ""), 16)
+        result.card_number = int(str(card_data['epc']).replace(" ", ""), 16) % 10**12
         result.finish_time = card_data['time']
 
         return result
@@ -196,4 +219,3 @@ class ImpinjClient(object):
 
     def choose_port(self):
         return memory.race().get_setting('system_port', None)
-
