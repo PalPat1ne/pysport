@@ -317,6 +317,11 @@ def menu_list():
                     'action': 'SportiduinoReadoutAction'
                 },
                 {
+                    'title': _('on/off RFID Impinj readout'),
+                    'icon': config.icon_dir('rfid_impinj.png'),
+                    'action': 'ImpinjReadoutAction'
+                },
+                {
                     'title': _('on/off SFR readout'),
                     'icon': config.icon_dir('sfr.png'),
                     'action': 'SFRReadoutAction'

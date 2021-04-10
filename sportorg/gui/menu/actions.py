@@ -45,6 +45,7 @@ from sportorg.modules.backup.json import get_races_from_file
 from sportorg.modules.iof import iof_xml
 from sportorg.modules.ocad import ocad
 from sportorg.modules.ocad.ocad import OcadImportException
+from sportorg.modules.rfid_impinj.rfid_impinj import ImpinjClient
 from sportorg.modules.sfr.sfrreader import SFRReaderClient
 from sportorg.modules.sportident.sireader import SIReaderClient
 from sportorg.modules.sportiduino.sportiduino import SportiduinoClient
@@ -368,6 +369,13 @@ class SPORTidentReadoutAction(Action, metaclass=ActionFactory):
 class SportiduinoReadoutAction(Action, metaclass=ActionFactory):
     def execute(self):
         SportiduinoClient().toggle()
+        time.sleep(0.5)
+        self.app.interval()
+
+
+class ImpinjReadoutAction(Action, metaclass=ActionFactory):
+    def execute(self):
+        ImpinjClient().toggle()
         time.sleep(0.5)
         self.app.interval()
 

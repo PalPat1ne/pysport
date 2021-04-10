@@ -31,6 +31,7 @@ class SystemType(Enum):
     SPORTIDENT = 2
     SFR = 3
     SPORTIDUINO = 4
+    RFID_IMPINJ = 5
 
     def __str__(self):
         return "%s" % self._name_
@@ -1018,6 +1019,9 @@ class ResultSFR(ResultSportident):
 
 class ResultSportiduino(ResultSportident):
     system_type = SystemType.SPORTIDUINO
+
+class ResultRfidImpinj(ResultSportident):
+    system_type = SystemType.RFID_IMPINJ
 
 
 class Person(Model):
