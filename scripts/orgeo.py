@@ -151,7 +151,8 @@ def create(requests, url, data, race_data, logger=None):
                 if person_data['organization_id'] and person_data['organization_id'] == item['id']:
                     result_data = _get_result_by_person(person_data, race_data)
                     persons.append(_get_person_obj(person_data, race_data, result_data))
-        elif item['object'] in ['Result', 'ResultSportident', 'ResultSportiduino', 'ResultSFR', 'ResultManual']:
+        elif item['object'] in ['Result', 'ResultSportident', 'ResultSportiduino', 'ResultSFR', 'ResultManual',
+                                'ResultRfidImpinj']:
             person_data = _get_person(item, race_data)
             if person_data:
                 persons.append(_get_person_obj(person_data, race_data, item))
@@ -182,7 +183,8 @@ def delete(requests, url, data, race_data, logger=None):
             persons.append({
                 'ref_id': item['id']
             })
-        elif item['object'] in ['Result', 'ResultSportident', 'ResultSportiduino', 'ResultSFR', 'ResultManual']:
+        elif item['object'] in ['Result', 'ResultSportident', 'ResultSportiduino', 'ResultSFR', 'ResultManual',
+                                'ResultRfidImpinj']:
             person_data = _get_person(item, race_data)
             if person_data:
                 persons.append({

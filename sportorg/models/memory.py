@@ -725,7 +725,7 @@ class Result:
         return self.status == ResultStatus.OK or self.status == ResultStatus.RESTORED
 
     def is_punch(self):
-        return self.is_sportident() or self.is_sfr() or self.is_sportiduino()
+        return self.is_sportident() or self.is_sfr() or self.is_sportiduino() or self.is_rfid_impinj()
 
     def is_sportident(self):
         return self.system_type == SystemType.SPORTIDENT
@@ -735,6 +735,9 @@ class Result:
 
     def is_sportiduino(self):
         return self.system_type == SystemType.SPORTIDUINO
+
+    def is_rfid_impinj(self):
+        return self.system_type == SystemType.RFID_IMPINJ
 
     def is_manual(self):
         return self.system_type == SystemType.MANUAL
@@ -1012,7 +1015,6 @@ class ResultSportident(Result):
         return is_changed
 
 
-
 class ResultSFR(ResultSportident):
     system_type = SystemType.SFR
 
@@ -1227,6 +1229,7 @@ class Race(Model):
             'ResultSportident': self.results,
             'ResultSFR': self.results,
             'ResultSportiduino': self.results,
+            'ResultRfidImpinj': self.results,
             'Group': self.groups,
             'Course': self.courses,
             'Organization': self.organizations,
@@ -1278,7 +1281,8 @@ class Race(Model):
         if dict_obj['object'] == 'Person':
             obj.group = self.get_obj('Group', dict_obj['group_id'])
             obj.organization = self.get_obj('Organization', dict_obj['organization_id'])
-        elif dict_obj['object'] in ['Result', 'ResultManual', 'ResultSportident', 'ResultSFR', 'ResultSportiduino']:
+        elif dict_obj['object'] in ['Result', 'ResultManual', 'ResultSportident', 'ResultSFR', 'ResultSportiduino',
+                                    'ResultRfidImpinj']:
             obj.person = self.get_obj('Person', dict_obj['person_id'])
         elif dict_obj['object'] == 'Group':
             obj.course = self.get_obj('Course', dict_obj['course_id'])

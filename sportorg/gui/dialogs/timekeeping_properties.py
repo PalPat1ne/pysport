@@ -106,6 +106,12 @@ class TimekeepingPropertiesDialog(QDialog):
         self.chip_duplicate_merge = QRadioButton(_('Merge punches'))
         self.chip_duplicate_layout.addRow(self.chip_duplicate_merge)
         self.chip_duplicate_box.setLayout(self.chip_duplicate_layout)
+        self.label_duplicate_timeout = QLabel(_('Duplicate timeout'))
+        self.item_duplicate_timeout = QTimeEdit()
+        self.item_duplicate_timeout.setDisplayFormat("HH:mm:ss")
+        self.item_duplicate_timeout.setMaximumSize(80, 20)
+        self.chip_duplicate_layout.addRow(self.label_duplicate_timeout, self.item_duplicate_timeout)
+
         self.tk_layout.addRow(self.chip_duplicate_box)
 
         self.assignment_mode = QCheckBox(_('Assignment mode'))
@@ -260,6 +266,7 @@ class TimekeepingPropertiesDialog(QDialog):
         duplicate_chip_processing = cur_race.get_setting('system_duplicate_chip_processing', 'several_results')
         assignment_mode = cur_race.get_setting('system_assignment_mode', False)
         si_port = cur_race.get_setting('system_port', '')
+        readout_duplicate_timeout = OTime(msec=cur_race.get_setting('readout_duplicate_timeout', 15000))
 
         self.item_zero_time.setTime(QTime(zero_time[0], zero_time[1]))
 
@@ -302,6 +309,8 @@ class TimekeepingPropertiesDialog(QDialog):
             self.chip_duplicate_relay_find_leg.setChecked(True)
         elif duplicate_chip_processing == 'merge':
             self.chip_duplicate_merge.setChecked(True)
+
+        self.item_duplicate_timeout.setTime(readout_duplicate_timeout.to_time())
 
         self.assignment_mode.setChecked(assignment_mode)
 
@@ -409,6 +418,8 @@ class TimekeepingPropertiesDialog(QDialog):
         elif self.chip_duplicate_merge.isChecked():
             duplicate_chip_processing = 'merge'
 
+        readout_duplicate_timeout = time_to_otime(self.item_duplicate_timeout.time()).to_msec()
+
         start_cp_number = self.item_start_cp_value.value()
         finish_cp_number = self.item_finish_cp_value.value()
 
@@ -430,6 +441,8 @@ class TimekeepingPropertiesDialog(QDialog):
 
         obj.set_setting('system_duplicate_chip_processing', duplicate_chip_processing)
         obj.set_setting('system_assignment_mode', self.assignment_mode.isChecked())
+
+        obj.set_setting('readout_duplicate_timeout', readout_duplicate_timeout)
 
         # result processing
         rp_mode = 'time'

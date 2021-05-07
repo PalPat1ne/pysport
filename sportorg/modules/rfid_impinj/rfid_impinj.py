@@ -1,9 +1,11 @@
 import logging
 import queue
 from queue import Queue, Empty
+from random import randint
 from threading import main_thread, Event
 
 import time
+from time import sleep
 
 import serial
 from PySide2.QtCore import QThread, Signal
@@ -13,6 +15,7 @@ from pyImpinj.enums import ImpinjR2KFastSwitchInventory
 from sportorg.common.otime import OTime
 from sportorg.common.singleton import singleton
 from sportorg.models import memory
+from sportorg.models.memory import race
 
 
 class ImpinjCommand:
@@ -32,7 +35,7 @@ class ImpinjThread(QThread):
         self._debug = debug
 
         self.timeout_list = {}
-        self.timeout = 15  # timeout in seconds
+        self.timeout = race().get_setting('readout_duplicate_timeout', 15000)
 
     def run(self):
         try:
@@ -76,12 +79,12 @@ class ImpinjThread(QThread):
                 card_data = data
                 card_data['time'] = OTime.now()
 
-                # don't create new result if we already have fresh result for this tag (timeout 15s)
+                # don't create new result if we already have fresh result for this tag (timeout, default 15s)
                 card_id = data['epc']
                 card_time = card_data['time']
                 if card_id in self.timeout_list:
                     old_time = self.timeout_list[card_id]
-                    if card_time - old_time < OTime(sec=self.timeout):
+                    if card_time - old_time < OTime(msec=self.timeout):
                         self._logger.debug('Duplicated result for tag {}, ignoring'.format(card_id))
                         continue
 
@@ -92,6 +95,22 @@ class ImpinjThread(QThread):
             except serial.serialutil.SerialException as e:
                 self._logger.error(str(e))
                 return
+            except Exception as e:
+                self._logger.error(str(e))
+
+    def run_test(self):
+        while True:
+            if not main_thread().is_alive() or self._stop_event.is_set():
+                self._logger.debug('Stop Impinj reader')
+                return
+            try:
+                sleep(1)
+                card_data = {}
+                card_data['time'] = OTime.now()
+                epc_list = ['00 00 00 01', '00 00 00 14', '00 00 00 0E', 'BFACACACACACACACACA']
+                card_data['epc'] = epc_list[randint(0,3)]
+                self._queue.put(ImpinjCommand('card_data', card_data), timeout=1)
+
             except Exception as e:
                 self._logger.error(str(e))
 
@@ -107,13 +126,14 @@ class ResultThread(QThread):
         self._logger = logger
 
         # self.timeout_list = {}
-        # self.timeout = 15  # timeout in seconds
+        # self.timeout = race().get_setting('readout_duplicate_timeout', 15000)  # timeout in milliseconds
 
     def run(self):
         time.sleep(1)
         while True:
             try:
-
+                # time.sleep(0.1)
+                # logging.debug('timeout = ' + str(self.timeout))
                 # dummy_data = {'epc':'00 00 00 01', 'time':OTime.now()}
                 # result = self._get_result(dummy_data)
                 # # don't create new result if we already have fresh result for this tag (timeout 15s)
@@ -122,7 +142,7 @@ class ResultThread(QThread):
                 # card_time = result.finish_time
                 # if card_id in self.timeout_list:
                 #     old_time = self.timeout_list[card_id]
-                #     if card_time - old_time < OTime(sec=self.timeout):
+                #     if card_time - old_time < OTime(msec=self.timeout):
                 #         self._logger.debug('Duplicated result for tag {}, ignoring'.format(card_id))
                 #         create_result = False
                 # if create_result:
@@ -145,9 +165,20 @@ class ResultThread(QThread):
     def _get_result(card_data):
         result = memory.race().new_result(memory.ResultRfidImpinj)
 
-        result.card_number = int(str(card_data['epc']).replace(" ", ""), 16) % 10**12
-        result.finish_time = card_data['time']
+        limit = 10**8
+        hex_offset = 5000000
+        epc = str(card_data['epc']).replace(" ", "")
 
+        # if epc contains only digits, use it directly
+        # otherwise convert hex -> dec + add offset
+        # 000014 = 14
+        # 00000E = 5000014
+        if epc.isdecimal():
+            result.card_number = int(epc) % limit
+        else:
+            result.card_number = (int(epc, 16) + hex_offset) % limit
+
+        result.finish_time = card_data['time']
         return result
 
 
