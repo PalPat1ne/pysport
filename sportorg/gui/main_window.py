@@ -501,10 +501,16 @@ class MainWindow(QMainWindow):
     }
 
     def interval(self):
-        if SIReaderClient().is_alive() != self.sportident_status:
+        is_alive = SIReaderClient().is_alive() \
+                   or SFRReaderClient().is_alive() \
+                   or SportiduinoClient().is_alive() \
+                   or ImpinjClient().is_alive()
+
+        if is_alive != self.sportident_status:
             self.toolbar_property['sportident'].setIcon(
-                QtGui.QIcon(config.icon_dir(self.sportident_icon[SIReaderClient().is_alive()])))
-            self.sportident_status = SIReaderClient().is_alive()
+                QtGui.QIcon(config.icon_dir(self.sportident_icon[is_alive])))
+            self.sportident_status = is_alive
+
         if Teamwork().is_alive() != self.teamwork_status:
             self.toolbar_property['teamwork'].setIcon(
                 QtGui.QIcon(config.icon_dir(self.teamwork_icon[Teamwork().is_alive()])))
@@ -534,7 +540,7 @@ class MainWindow(QMainWindow):
             _('SportOrg file (*.json)'),
             time.strftime("%Y%m%d")
         )
-        if file_name is not '':
+        if file_name != '':
             try:
                 if update_data:
                     new_event([Race()])
