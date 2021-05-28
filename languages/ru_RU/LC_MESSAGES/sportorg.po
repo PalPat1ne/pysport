@@ -1380,3 +1380,27 @@ msgstr "Таймаут повторного чтения"
 
 msgid "on/off RFID Impinj readout"
 msgstr "Запустить/остановить чтение чипов RFID Impinj"
+
+msgid "allow duplicates"
+msgstr "считать все повторные отметки"
+
+msgid "Use this option to count one punch several times, e.g. in trails with ring punching"
+msgstr "Используйте эту опцию для учета всех повторяющихся отметок. Пример использования: трейл-забег в несколько кругов с отметкой на каждом круге"
+
+msgid "Code"
+msgstr "код"
+
+msgid "Id"
+msgstr "Id"
+
+msgid "IOF xml"
+msgstr "Файл IOF xml"
+
+msgid "MS Word file (*.docx)"
+msgstr "Файл MS Word (*.docx)"
+
+msgid "ResultList"
+msgstr "ResultList (результаты)"
+
+msgid "SportOrg (*.json)"
+msgstr "Файл SportOrg (*.json)"
