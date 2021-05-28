@@ -140,6 +140,10 @@ class TimekeepingPropertiesDialog(QDialog):
         self.rp_scores_minute_penalty_edit = QSpinBox()
         self.rp_scores_minute_penalty_edit.setMaximumWidth(50)
         self.rp_scores_layout.addRow(self.rp_scores_minute_penalty_label, self.rp_scores_minute_penalty_edit)
+        self.rp_scores_allow_duplicates = QCheckBox(_('allow duplicates'))
+        self.rp_scores_allow_duplicates.setToolTip(_('Use this option to count one punch several times,'
+                                                     ' e.g. in trails with ring punching'))
+        self.rp_scores_layout.addRow(self.rp_scores_allow_duplicates)
         self.result_proc_layout.addRow(self.rp_scores_group)
         self.result_proc_tab.setLayout(self.result_proc_layout)
 
@@ -320,6 +324,7 @@ class TimekeepingPropertiesDialog(QDialog):
         rp_score_mode = obj.get_setting('result_processing_score_mode', 'rogain')
         rp_fixed_scores_value = obj.get_setting('result_processing_fixed_score_value', 1)
         rp_scores_minute_penalty = obj.get_setting('result_processing_scores_minute_penalty', 1)
+        rp_scores_allow_duplicates = obj.get_setting('result_processing_scores_allow_duplicates', False)
 
         if rp_mode == 'time':
             self.rp_time_radio.setChecked(True)
@@ -333,6 +338,7 @@ class TimekeepingPropertiesDialog(QDialog):
 
         self.rp_fixed_scores_edit.setValue(rp_fixed_scores_value)
         self.rp_scores_minute_penalty_edit.setValue(rp_scores_minute_penalty)
+        self.rp_scores_allow_duplicates.setChecked(rp_scores_allow_duplicates)
 
         # penalty calculation
 
@@ -456,11 +462,14 @@ class TimekeepingPropertiesDialog(QDialog):
         rp_fixed_scores_value = self.rp_fixed_scores_edit.value()
 
         rp_scores_minute_penalty = self.rp_scores_minute_penalty_edit.value()
+        rp_scores_allow_duplicates = self.rp_scores_allow_duplicates.isChecked()
+
 
         obj.set_setting('result_processing_mode', rp_mode)
         obj.set_setting('result_processing_score_mode', rp_score_mode)
         obj.set_setting('result_processing_fixed_score_value', rp_fixed_scores_value)
         obj.set_setting('result_processing_scores_minute_penalty', rp_scores_minute_penalty)
+        obj.set_setting('result_processing_scores_allow_duplicates', rp_scores_allow_duplicates)
 
         # marked route
         mr_mode = 'off'

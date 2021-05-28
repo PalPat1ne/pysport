@@ -202,9 +202,13 @@ class ResultChecker:
     def calculate_scores_rogain(result):
         user_array = []
         ret = 0
+
+        penalty_step = race().get_setting('result_processing_scores_minute_penalty', 1.0)
+        allow_duplicates = race().get_setting('result_processing_scores_allow_duplicates', False)
+
         for cur_split in result.splits:
             code = str(cur_split.code)
-            if code not in user_array:
+            if allow_duplicates or (code not in user_array):
                 user_array.append(code)
                 ret += ResultChecker.get_control_score(code)
         if result.person and result.person.group:
@@ -214,7 +218,7 @@ class ResultChecker:
                 time_diff = user_time - max_time
                 seconds_diff = time_diff.to_sec()
                 minutes_diff = (seconds_diff + 59) // 60  # note, 1:01 = 2 minutes
-                penalty_step = race().get_setting('result_processing_scores_minute_penalty', 1.0)
+
                 ret -= minutes_diff * penalty_step
         if ret < 0:
             ret = 0
